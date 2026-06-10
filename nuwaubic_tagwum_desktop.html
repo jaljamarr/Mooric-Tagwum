@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nuwaubic Tagwum — Moor Calendar & Clock</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#c8973a;
+  --gold-light:#e8b84b;
+  --gold-dim:#7a5a1f;
+  --bg:#080510;
+  --bg2:#0d0b07;
+  --bg3:#130f0a;
+  --surface:#1a1510;
+  --surface2:#221d14;
+  --border:rgba(200,151,58,.13);
+  --border2:rgba(200,151,58,.24);
+  --text:#e8dcc8;
+  --text2:#b09a72;
+  --text3:#6a5a3a;
+  --ra:#f5a623;
+  --ra-bg:rgba(245,166,35,.1);
+  --ra-glow:rgba(245,166,35,.28);
+  --set:#a898f0;
+  --set-bg:rgba(168,152,240,.1);
+  --set-glow:rgba(168,152,240,.28);
+  --sw:260px;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:'Georgia',serif;display:flex}
+
+/* ─── SIDEBAR ─── */
+.sidebar{
+  width:var(--sw);min-width:var(--sw);
+  height:100vh;
+  background:var(--bg2);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+
+.s-brand{
+  padding:18px 20px 14px;
+  border-bottom:1px solid var(--border);
+}
+.s-brand h1{
+  font-size:15px;font-weight:700;
+  color:var(--gold);letter-spacing:.07em;line-height:1.3;
+}
+.s-brand p{font-size:8px;color:var(--text3);letter-spacing:.18em;margin-top:3px}
+
+/* mini clock */
+.s-clock{
+  padding:16px 20px 14px;
+  border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;
+  background:var(--bg);
+  transition:background 2s;
+}
+#mini-canvas{display:block;margin:0 auto 10px}
+.s-time{
+  font-size:24px;font-weight:700;color:var(--gold-light);
+  letter-spacing:.04em;font-variant-numeric:tabular-nums;text-align:center;
+}
+.s-time-lbl{font-size:7px;color:var(--text3);letter-spacing:.14em;text-align:center;margin-top:2px}
+.s-cycle-pill{
+  display:inline-block;margin-top:8px;
+  padding:3px 11px;border-radius:12px;
+  font-size:8px;letter-spacing:.1em;border:1px solid;
+  transition:all 1.5s;
+}
+.pill-ra{background:var(--ra-bg);color:var(--ra);border-color:var(--ra-glow)}
+.pill-set{background:var(--set-bg);color:var(--set);border-color:var(--set-glow)}
+
+/* sidebar date */
+.s-date{
+  padding:11px 20px 12px;
+  border-bottom:1px solid var(--border);
+  text-align:center;
+}
+.s-date-main{font-size:12px;color:var(--text);letter-spacing:.04em;line-height:1.7}
+.s-date-sub{font-size:8px;color:var(--text3);letter-spacing:.08em;margin-top:2px}
+
+/* nav */
+.s-nav{padding:10px 10px;flex:1;overflow-y:auto}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:7px;
+  cursor:pointer;transition:all .14s;
+  font-size:12px;letter-spacing:.08em;color:var(--text2);
+  margin-bottom:3px;
+}
+.nav-item:hover{background:var(--surface);color:var(--text)}
+.nav-item.active{background:var(--gold-dim);color:var(--gold-light)}
+.nav-icon{font-size:13px;flex-shrink:0;opacity:.75}
+
+/* sanu footer */
+.s-sanu{
+  padding:12px 14px;
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:7px;
+}
+.sanu-btn{
+  width:27px;height:27px;border:1px solid var(--border2);border-radius:5px;
+  background:var(--surface);color:var(--text);cursor:pointer;
+  font-size:13px;display:flex;align-items:center;justify-content:center;
+  transition:all .14s;font-family:Georgia,serif;flex-shrink:0;
+}
+.sanu-btn:hover{background:var(--surface2);border-color:var(--gold-dim)}
+.sanu-display{font-size:12px;color:var(--gold);letter-spacing:.06em;text-align:center;flex:1}
+.today-btn{
+  padding:5px 10px;border:1px solid var(--gold-dim);border-radius:5px;
+  background:transparent;color:var(--gold);cursor:pointer;
+  font-size:9px;letter-spacing:.08em;font-family:Georgia,serif;
+  transition:all .14s;flex-shrink:0;
+}
+.today-btn:hover{background:var(--gold-dim);color:var(--gold-light)}
+
+/* ─── MAIN ─── */
+.main{flex:1;height:100vh;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* topbar */
+.topbar{
+  padding:10px 22px;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;gap:16px;
+}
+.topbar-nuwaubic{font-size:12px;color:var(--text2);letter-spacing:.05em}
+.topbar-nuwaubic strong{color:var(--text);font-weight:700}
+.topbar-greg{font-size:10px;color:var(--text3);letter-spacing:.06em;white-space:nowrap}
+
+/* content area */
+.content{flex:1;overflow-y:auto;padding:18px 22px}
+
+/* ─── YEAR VIEW ─── */
+.year-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(188px,1fr));
+  gap:11px;
+}
+.mini-month{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;overflow:hidden;cursor:pointer;transition:all .2s;
+}
+.mini-month:hover{border-color:var(--gold-dim);background:var(--surface2)}
+.mini-month.cur-month{border-color:var(--gold);box-shadow:0 0 0 1px rgba(200,151,58,.2)}
+.mini-hdr{
+  background:var(--bg3);padding:7px 9px;
+  font-size:9.5px;letter-spacing:.1em;color:var(--gold);
+  display:flex;justify-content:space-between;align-items:center;
+  border-bottom:1px solid var(--border);
+}
+.mini-hdr .mn{font-size:8px;color:var(--text3)}
+.mini-grid{padding:7px;display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
+.mini-cell{
+  aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  font-size:8px;color:var(--text3);border-radius:3px;transition:background .1s;
+}
+.mini-cell:hover{background:var(--surface2);color:var(--text2)}
+.mini-cell.today{background:var(--gold-dim);color:var(--gold-light);font-weight:700}
+.mini-wsep{grid-column:1/-1;height:4px;display:flex;align-items:center;justify-content:center}
+.mini-wsep::after{content:'';width:4px;height:4px;border-radius:50%;background:var(--border2);display:block}
+.mini-pad{grid-column:span 1;aspect-ratio:1}
+
+/* ─── MONTH VIEW ─── */
+.mv-header{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  margin-bottom:18px;flex-wrap:wrap;gap:12px;
+}
+.mv-title{font-size:23px;font-weight:700;color:var(--gold-light);letter-spacing:.04em}
+.mv-sub{font-size:10px;color:var(--text3);letter-spacing:.1em;margin-top:3px}
+.mv-controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.mnav-btn{
+  width:29px;height:29px;border:1px solid var(--border2);border-radius:5px;
+  background:var(--surface);color:var(--text);cursor:pointer;
+  font-size:14px;display:flex;align-items:center;justify-content:center;
+  transition:all .14s;font-family:Georgia,serif;
+}
+.mnav-btn:hover{background:var(--surface2);border-color:var(--gold-dim)}
+.back-btn{
+  padding:5px 12px;border:1px solid var(--border2);border-radius:5px;
+  background:var(--surface);color:var(--text2);cursor:pointer;
+  font-size:10px;letter-spacing:.06em;font-family:Georgia,serif;transition:all .14s;
+}
+.back-btn:hover{background:var(--surface2);color:var(--text)}
+
+.week-block{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;overflow:hidden;margin-bottom:8px;
+}
+.week-lbl{
+  padding:5px 12px;background:var(--bg3);
+  border-bottom:1px solid var(--border);
+  font-size:8px;letter-spacing:.15em;color:var(--text3);
+  display:flex;justify-content:space-between;
+}
+.week-lbl span{color:var(--text2)}
+.week-days{display:grid;padding:4px;gap:4px}
+.w5{grid-template-columns:repeat(5,1fr)}
+.w4{grid-template-columns:repeat(4,1fr)}
+.day-cell{
+  border:1px solid var(--border);border-radius:6px;
+  padding:8px 6px 10px;min-height:78px;
+  cursor:pointer;transition:all .14s;
+  display:flex;flex-direction:column;
+}
+.day-cell:hover{border-color:var(--gold-dim);background:var(--bg3)}
+.day-cell.today{border-color:var(--gold);background:rgba(200,151,58,.05)}
+.day-cell.today .day-num{color:var(--gold-light)}
+.day-ordinal{font-size:7px;color:var(--text3);letter-spacing:.06em;line-height:1.4;margin-bottom:4px;text-align:center}
+.day-num{font-size:21px;font-weight:700;color:var(--text2);text-align:center;line-height:1}
+.day-greg{font-size:7px;color:var(--text3);text-align:center;margin-top:3px}
+.today-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);margin:5px auto 0}
+.week-sep{
+  display:flex;align-items:center;justify-content:center;
+  padding:3px 0;font-size:10px;color:var(--text3);
+  letter-spacing:.12em;
+}
+
+/* ─── CLOCK VIEW ─── */
+.clock-wrap{
+  display:flex;flex-direction:column;align-items:center;
+  padding:8px 0;
+}
+.cycle-bar{
+  display:inline-block;
+  padding:4px 14px;border-radius:14px;font-size:8px;letter-spacing:.13em;
+  border:1px solid;margin-bottom:16px;transition:all 1.5s;
+}
+.cycle-bar.c-ra{background:var(--ra-bg);color:var(--ra);border-color:var(--ra-glow)}
+.cycle-bar.c-set{background:var(--set-bg);color:var(--set);border-color:var(--set-glow)}
+canvas#mainclock{display:block;margin:0 auto 20px}
+.clock-info-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:11px;padding:24px 28px;text-align:center;
+  max-width:420px;width:100%;
+}
+.clock-bignum{
+  font-size:46px;font-weight:700;color:var(--gold-light);
+  letter-spacing:.04em;font-variant-numeric:tabular-nums;margin-bottom:4px;
+}
+.clock-sublbl{font-size:10px;color:var(--text3);letter-spacing:.13em;margin-bottom:10px}
+.clock-cardinal{font-size:11px;color:var(--text2);line-height:1.9}
+.date-pill{
+  margin-top:16px;border:1px solid var(--border2);border-radius:8px;
+  padding:12px 20px;background:var(--bg3);
+}
+.dp-sanu{font-size:8px;color:var(--text3);letter-spacing:.1em;margin-bottom:4px}
+.dp-main{font-size:14px;color:var(--text);letter-spacing:.04em}
+.dp-sub{font-size:9px;color:var(--text3);margin-top:3px;letter-spacing:.06em}
+
+/* ─── CONVERTER ─── */
+.conv-wrap{max-width:610px;margin:0 auto}
+.conv-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:20px;margin-bottom:12px;
+}
+.conv-title{font-size:9px;letter-spacing:.13em;color:var(--gold);margin-bottom:14px}
+.field-row{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:11px;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:4px;flex:1;min-width:85px}
+.fg label{font-size:8px;letter-spacing:.1em;color:var(--text3)}
+.fg input,.fg select{
+  width:100%;padding:6px 9px;
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:5px;color:var(--text);font-size:12px;font-family:Georgia,serif;
+}
+.fg input:focus,.fg select:focus{outline:none;border-color:var(--gold-dim)}
+.fg select option{background:var(--bg3)}
+.fsep{display:flex;align-items:flex-end;padding-bottom:7px;color:var(--text3);font-size:16px;flex-shrink:0}
+.conv-btn{
+  width:100%;padding:9px;border:1px solid var(--gold-dim);
+  border-radius:6px;background:var(--gold-dim);color:var(--gold-light);
+  cursor:pointer;font-size:12px;letter-spacing:.06em;font-family:Georgia,serif;
+  transition:all .14s;margin-top:4px;
+}
+.conv-btn:hover{background:var(--gold);color:var(--bg)}
+.result-box{
+  margin-top:11px;padding:12px 14px;
+  background:var(--bg3);border:1px solid var(--border2);border-radius:6px;
+}
+.result-lbl{font-size:8px;color:var(--text3);letter-spacing:.1em;margin-bottom:5px}
+.result-val{font-size:16px;color:var(--gold-light);letter-spacing:.03em;line-height:1.4}
+.result-sub{font-size:10px;color:var(--text2);margin-top:4px;line-height:1.6}
+
+/* panels */
+.panel{display:none}
+.panel.active{display:block}
+#panel-clock.active{display:flex;justify-content:center}
+
+/* scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(200,151,58,.2);border-radius:2px}
+
+/* ─── TIME BASE OPTIONS ─── */
+.tb-opt{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:11px 13px;border-radius:8px;border:1px solid var(--border);
+  background:var(--bg3);cursor:pointer;transition:all .15s;
+}
+.tb-opt:hover{border-color:var(--gold-dim);background:var(--surface)}
+.tb-opt input[type=radio]{margin-top:3px;flex-shrink:0;accent-color:var(--gold)}
+.tb-opt.selected{border-color:var(--gold);background:rgba(200,151,58,.07)}
+.tb-opt-body{flex:1}
+.tb-opt-title{font-size:11px;color:var(--text);letter-spacing:.04em;margin-bottom:4px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.tb-opt-desc{font-size:9px;color:var(--text3);letter-spacing:.04em;line-height:1.6}
+.tb-badge{font-size:7px;padding:2px 6px;border-radius:10px;letter-spacing:.08em}
+.tb-badge-rec{background:rgba(200,151,58,.18);color:var(--gold);border:1px solid var(--gold-dim)}
+</style>
+</head>
+<body>
+
+<!-- ─── SIDEBAR ─── -->
+<aside class="sidebar">
+  <div class="s-brand">
+    <h1>Nuwaubic Tagwum</h1>
+    <p>MOOR CALENDAR &amp; CLOCK</p>
+  </div>
+
+  <div class="s-clock" id="s-clock-shell">
+    <canvas id="mini-canvas"></canvas>
+    <div class="s-time" id="s-time">0 · 0 · 0</div>
+    <div class="s-time-lbl">HAR · ATNAH · WAH</div>
+    <div class="s-cycle-pill pill-ra" id="s-cycle">RA CYCLE</div>
+  </div>
+
+  <div class="s-date">
+    <div class="s-date-main" id="s-date-main">— Ṡahur · — Yawum</div>
+    <div class="s-date-sub" id="s-date-sub">Month — · Day —</div>
+  </div>
+
+  <nav class="s-nav">
+    <div class="nav-item active" onclick="switchPanel('year')" id="nav-year">
+      <span class="nav-icon">☽</span> Year View
+    </div>
+    <div class="nav-item" onclick="switchPanel('month')" id="nav-month">
+      <span class="nav-icon">◈</span> Month View
+    </div>
+    <div class="nav-item" onclick="switchPanel('clock')" id="nav-clock">
+      <span class="nav-icon">◎</span> Clock Detail
+    </div>
+    <div class="nav-item" onclick="switchPanel('convert')" id="nav-convert">
+      <span class="nav-icon">⇌</span> Converter
+    </div>
+    <div class="nav-item" onclick="switchPanel('settings')" id="nav-settings">
+      <span class="nav-icon">⚙</span> Time Base
+    </div>
+  </nav>
+
+  <div class="s-sanu">
+    <button class="sanu-btn" onclick="changeSanu(-1)">&#8592;</button>
+    <div class="sanu-display" id="sanu-display">Sanu 80</div>
+    <button class="sanu-btn" onclick="changeSanu(1)">&#8594;</button>
+    <button class="today-btn" onclick="goToday()">Today</button>
+  </div>
+</aside>
+
+<!-- ─── MAIN ─── -->
+<div class="main">
+
+  <div class="topbar">
+    <div class="topbar-nuwaubic" id="tb-nuwaubic">—</div>
+    <div class="topbar-greg" id="tb-greg">—</div>
+  </div>
+
+  <div class="content">
+
+    <!-- YEAR PANEL -->
+    <div id="panel-year" class="panel active">
+      <div class="year-grid" id="year-grid"></div>
+    </div>
+
+    <!-- MONTH PANEL -->
+    <div id="panel-month" class="panel">
+      <div class="mv-header">
+        <div>
+          <div class="mv-title" id="mv-title">—</div>
+          <div class="mv-sub" id="mv-sub">—</div>
+        </div>
+        <div class="mv-controls">
+          <button class="mnav-btn" onclick="changeMonth(-1)">&#8592;</button>
+          <button class="mnav-btn" onclick="changeMonth(1)">&#8594;</button>
+          <button class="back-btn" onclick="switchPanel('year')">&#8592; All Months</button>
+        </div>
+      </div>
+      <div id="month-body"></div>
+    </div>
+
+    <!-- CLOCK PANEL -->
+    <div id="panel-clock" class="panel">
+      <div class="clock-wrap">
+        <div class="cycle-bar c-ra" id="cv-cycle">RA CYCLE — DAYTIME · HAR 0–18</div>
+        <canvas id="mainclock"></canvas>
+        <div class="clock-info-card">
+          <div class="clock-bignum" id="cv-time">0 · 0 · 0</div>
+          <div class="clock-sublbl">Har · Atnah · Wah</div>
+          <div class="clock-cardinal" id="cv-cardinal">—</div>
+          <div class="date-pill">
+            <div class="dp-sanu" id="cv-sanu">SANU —</div>
+            <div class="dp-main" id="cv-date">—</div>
+            <div class="dp-sub" id="cv-dsub">—</div>
+          </div>
+          <div class="date-pill" style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div>
+              <div class="dp-sanu">LOCAL DATE &amp; TIME</div>
+              <div id="cv-localtime" style="font-size:13px;color:var(--text);letter-spacing:.03em;line-height:1.5">—</div>
+            </div>
+            <div style="text-align:right">
+              <div class="dp-sanu">UTC</div>
+              <div id="cv-utctime" style="font-size:11px;color:var(--text2);letter-spacing:.03em;font-variant-numeric:tabular-nums">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONVERT PANEL -->
+    <div id="panel-convert" class="panel">
+      <div class="conv-wrap">
+        <div class="conv-card">
+          <div class="conv-title">WESTERN → NUWAUBIC</div>
+          <div class="field-row">
+            <div class="fg"><label>DATE</label><input type="date" id="w2n-date"></div>
+            <div class="fg"><label>TIME</label><input type="time" id="w2n-time" value="12:00"></div>
+            <div class="fg" style="min-width:148px"><label>TIMEZONE</label><select id="w2n-tz"></select></div>
+          </div>
+          <button class="conv-btn" onclick="convertW2N()">Convert to Nuwaubic</button>
+          <div class="result-box" id="w2n-result" style="display:none">
+            <div class="result-lbl">NUWAUBIC DATE &amp; TIME</div>
+            <div class="result-val" id="w2n-rval"></div>
+            <div class="result-sub" id="w2n-rsub"></div>
+          </div>
+        </div>
+        <div class="conv-card">
+          <div class="conv-title">NUWAUBIC → WESTERN</div>
+          <div class="field-row">
+            <div class="fg" style="max-width:80px"><label>SANU</label><input type="number" id="n2w-sanu" min="1" value="80"></div>
+            <div class="fsep">·</div>
+            <div class="fg" style="max-width:80px"><label>ṠAHUR (1–19)</label><input type="number" id="n2w-shahur" min="1" max="19" value="1"></div>
+            <div class="fsep">·</div>
+            <div class="fg" style="max-width:80px"><label>YAWUM (1–19)</label><input type="number" id="n2w-yawum" min="1" max="19" value="1"></div>
+          </div>
+          <div class="field-row">
+            <div class="fg" style="max-width:80px"><label>HAR (0–37)</label><input type="number" id="n2w-har" min="0" max="37" value="0"></div>
+            <div class="fsep">·</div>
+            <div class="fg" style="max-width:80px"><label>ATNAH (0–18)</label><input type="number" id="n2w-atnah" min="0" max="18" value="0"></div>
+            <div class="fsep">·</div>
+            <div class="fg" style="max-width:80px"><label>WAH (0–18)</label><input type="number" id="n2w-wah" min="0" max="18" value="0"></div>
+          </div>
+          <div class="field-row">
+            <div class="fg"><label>OUTPUT TIMEZONE</label><select id="n2w-tz"></select></div>
+          </div>
+          <button class="conv-btn" onclick="convertN2W()">Convert to Western</button>
+          <div class="result-box" id="n2w-result" style="display:none">
+            <div class="result-lbl">WESTERN DATE &amp; TIME</div>
+            <div class="result-val" id="n2w-rval"></div>
+            <div class="result-sub" id="n2w-rsub"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS PANEL -->
+    <div id="panel-settings" class="panel">
+      <div class="conv-wrap">
+        <div class="conv-card">
+          <div class="conv-title">⚙ TIME BASE — HAR 00:00 ALIGNMENT</div>
+          <p style="font-size:10px;color:var(--text3);letter-spacing:.06em;line-height:1.7;margin-bottom:16px">
+            Choose what moment counts as <strong style="color:var(--text2)">Har 0, Atnah 0, Wah 0</strong> (the start of the 38-har cycle).
+            "Local Device" aligns the cycle with your device's local midnight so Ra &amp; Set phases
+            follow your actual sunrise and sunset.
+          </p>
+
+          <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:18px" id="tb-options">
+
+            <label class="tb-opt" data-val="local">
+              <input type="radio" name="timebase" value="local" checked>
+              <div class="tb-opt-body">
+                <div class="tb-opt-title">🌅 Local Device Time <span class="tb-badge tb-badge-rec">RECOMMENDED</span></div>
+                <div class="tb-opt-desc">Har 00 = your device's local midnight. Ra (Har 0–18) matches daytime; Set (Har 19–37) matches nighttime in your timezone.</div>
+              </div>
+            </label>
+
+            <label class="tb-opt" data-val="utc">
+              <input type="radio" name="timebase" value="utc">
+              <div class="tb-opt-body">
+                <div class="tb-opt-title">🌐 UTC (Original)</div>
+                <div class="tb-opt-desc">Har 00 = UTC midnight (Greenwich). Classic behaviour — cycle is fixed to the prime meridian regardless of your location.</div>
+              </div>
+            </label>
+
+            <label class="tb-opt" data-val="custom">
+              <input type="radio" name="timebase" value="custom">
+              <div class="tb-opt-body">
+                <div class="tb-opt-title">✏️ Custom Offset</div>
+                <div class="tb-opt-desc">Manually specify a UTC offset in hours (e.g. −5 for EST, +3 for EAT). Useful for fixed community time zones.</div>
+                <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+                  <span style="font-size:10px;color:var(--text3)">UTC OFFSET (hours):</span>
+                  <input type="number" id="custom-offset" min="-12" max="14" step="0.5" value="0"
+                    style="width:70px;padding:4px 7px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-size:12px;font-family:Georgia,serif"
+                    oninput="applyTimeBase()">
+                </div>
+              </div>
+            </label>
+
+          </div>
+
+          <button class="conv-btn" onclick="applyTimeBase()">Apply Time Base</button>
+
+          <div id="tb-status" style="margin-top:12px;padding:10px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;display:none">
+            <div style="font-size:8px;color:var(--text3);letter-spacing:.1em;margin-bottom:4px">ACTIVE TIME BASE</div>
+            <div id="tb-status-val" style="font-size:13px;color:var(--gold-light);letter-spacing:.03em"></div>
+            <div id="tb-status-sub" style="font-size:10px;color:var(--text2);margin-top:3px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- .content -->
+</div><!-- .main -->
+
+<script>
+// ── CONSTANTS ──
+const GENESIS_UTC = Date.UTC(1945,5,26,0,0,0);
+const MS_PER_WAH  = (24*3600*1000)/13718;
+const WPH=361, WPA=19, WPY=13718, WPSH=19*13718, WPSA=361*13718;
+
+// ── TIME BASE ──
+// localOffsetMs: milliseconds to ADD to (Date.now()-GENESIS_UTC) so that
+// Har 00 aligns with the chosen local midnight rather than UTC midnight.
+// For local device time: offset = device's UTC offset (positive = east of UTC).
+let timeBaseMode = 'local'; // 'local' | 'utc' | 'custom'
+let customOffsetHours = 0;
+
+function getLocalOffsetMs(){
+  if(timeBaseMode==='utc') return 0;
+  if(timeBaseMode==='custom') return customOffsetHours * 3600000;
+  // 'local': use device timezone offset (JS gives negative for UTC+; reverse it)
+  return -new Date().getTimezoneOffset() * 60000;
+}
+
+const CARDINAL=['Safed','Wahed','Atned','Taled','Arbed','Khased','Sated','Sabed','Tamed','Tased',
+  'Ashed','Wahed Ashed','Atned Ashed','Taled Ashed','Arbed Ashed','Khased Ashed',
+  'Sated Ashed','Sabed Ashed','Tamed Ashed'];
+const ORDINAL=['','Wah','Atnah','Talah','Rabah','Khasah','Satah','Sabah','Tamah','Tasah','Ashah'];
+const MONTH_NAMES=[
+  'El Wah Ṡahur','El Atnah Ṡahur','El Talah Ṡahur','El Rabah Ṡahur','El Khasah Ṡahur',
+  'El Satah Ṡahur','El Sabah Ṡahur','El Tamah Ṡahur','El Tasah Ṡahur','El Aṡah Ṡahur',
+  'El Wahed Aṡah Ṡahur','El Atned Aṡah Ṡahur','El Taled Aṡah Ṡahur','El Arbed Aṡah Ṡahur',
+  'El Khased Aṡah Ṡahur','El Sated Aṡah Ṡahur','El Sabed Aṡah Ṡahur','El Tamed Aṡah Ṡahur',
+  'El Tased Aṡah Ṡahur'
+];
+const DAY_NAMES=[
+  'El Wah Yawum','El Atnah Yawum','El Talah Yawum','El Rabah Yawum','El Khasah Yawum',
+  'El Satah Yawum','El Sabah Yawum','El Tamah Yawum','El Tasah Yawum','El Aṡah Yawum',
+  'El Wahed Aṡah Yawum','El Atned Aṡah Yawum','El Taled Aṡah Yawum','El Arbed Aṡah Yawum',
+  'El Khased Aṡah Yawum','El Sated Aṡah Yawum','El Sabed Aṡah Yawum','El Tamed Aṡah Yawum',
+  'El Tased Aṡah Yawum'
+];
+const WEEK_NAMES=["El Wah Usb'a","El Atnah Usb'a","El Talah Usb'a","El Rabah Usb'a"];
+const WEEKS=[[1,2,3,4,5],[6,7,8,9,10],[11,12,13,14,15],[16,17,18,19]];
+
+const TZ_LIST=[
+  {l:'UTC (UTC+0)',v:'UTC'},
+  {l:'Eastern US',v:'America/New_York'},
+  {l:'Central US',v:'America/Chicago'},
+  {l:'Mountain US',v:'America/Denver'},
+  {l:'Pacific US',v:'America/Los_Angeles'},
+  {l:'London',v:'Europe/London'},
+  {l:'Paris',v:'Europe/Paris'},
+  {l:'Cairo',v:'Africa/Cairo'},
+  {l:'Dubai',v:'Asia/Dubai'},
+  {l:'Nairobi',v:'Africa/Nairobi'},
+  {l:'Lagos',v:'Africa/Lagos'},
+  {l:'Accra',v:'Africa/Accra'},
+  {l:'Johannesburg',v:'Africa/Johannesburg'},
+  {l:'Mumbai',v:'Asia/Kolkata'},
+  {l:'Tokyo',v:'Asia/Tokyo'},
+  {l:'Beijing',v:'Asia/Shanghai'},
+  {l:'Sydney',v:'Australia/Sydney'},
+  {l:'São Paulo',v:'America/Sao_Paulo'},
+  {l:'Mexico City',v:'America/Mexico_City'},
+];
+
+// ── STATE ──
+let currentPanel='year', currentSanu=1, currentMonth=1, todayN=null;
+
+// ── HELPERS ──
+function getCard(n){
+  if(n>=0&&n<=18)return CARDINAL[n];
+  if(n===19)return'Tased Ashed';
+  if(n===20)return'Atnedeen';
+  if(n<=37){
+    const d=Math.floor(n/10),u=n%10;
+    const tn=d===3?'Taledeen':'Atnedeen';
+    return u===0?tn:tn+' Wa '+CARDINAL[u];
+  }
+  if(n===38)return'Tamedeen Wa Taledeen';
+  return String(n);
+}
+function getOrd(n){
+  if(n>=1&&n<=10)return ORDINAL[n];
+  if(n>=11&&n<=18)return ORDINAL[n-10]+' Ashah';
+  if(n===19)return'Tased Ashah';
+  return n+'th';
+}
+
+// ── CONVERSION MATH ──
+function msToN(ms){
+  const tw=Math.floor(ms/MS_PER_WAH);
+  const sanu=Math.floor(tw/WPSA);  const r1=tw%WPSA;
+  const sh=Math.floor(r1/WPSH);    const r2=r1%WPSH;
+  const ya=Math.floor(r2/WPY);     const r3=r2%WPY;
+  const ha=Math.floor(r3/WPH);     const r4=r3%WPH;
+  const at=Math.floor(r4/WPA);     const wa=r4%WPA;
+  return{sanu:sanu+1,shahur:sh+1,yawum:ya+1,har:ha,atnah:at,wah:wa};
+}
+function nToMs(sanu,sh,ya,ha,at,wa){
+  const tw=((sanu-1)*WPSA)+((sh-1)*WPSH)+((ya-1)*WPY)+(ha*WPH)+(at*WPA)+wa;
+  return GENESIS_UTC+Math.round(tw*MS_PER_WAH);
+}
+function nDayGreg(sanu,sh,ya){
+  return new Date(nToMs(sanu,sh,ya,0,0,0))
+    .toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});
+}
+
+// ── INIT ──
+function initTZ(){
+  ['w2n-tz','n2w-tz'].forEach(id=>{
+    const sel=document.getElementById(id);
+    TZ_LIST.forEach(tz=>{
+      const o=document.createElement('option');
+      o.value=tz.v; o.textContent=tz.l;
+      if(tz.v==='America/New_York')o.selected=true;
+      sel.appendChild(o);
+    });
+  });
+}
+function initDate(){
+  const t=new Date();
+  document.getElementById('w2n-date').value=
+    `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+}
+
+// ── DRAW CLOCK (shared, works for both mini and full) ──
+function drawClock(ctx,W,H,t,isRa){
+  const cx=W/2, cy=H/2;
+  const TOTAL=38;
+  const OR=W*0.44, IR=W*0.37;
+  ctx.clearRect(0,0,W,H);
+
+  const accent   = isRa?'#f5a623':'#a898f0';
+  const raFill   = 'rgba(245,166,35,';
+  const setFill  = 'rgba(168,152,240,';
+
+  // outer ambient glow ring
+  ctx.beginPath(); ctx.arc(cx,cy,OR+3,0,Math.PI*2);
+  ctx.strokeStyle = isRa?raFill+'0.14)':setFill+'0.14)';
+  ctx.lineWidth=6; ctx.stroke();
+
+  // Ra/Set arc backgrounds
+  const raEnd=(19/38)*Math.PI*2-Math.PI/2;
+  ctx.beginPath(); ctx.arc(cx,cy,IR+11,-Math.PI/2,raEnd);
+  ctx.strokeStyle=raFill+'0.07)'; ctx.lineWidth=9; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx,cy,IR+11,raEnd,Math.PI*1.5);
+  ctx.strokeStyle=setFill+'0.07)'; ctx.lineWidth=9; ctx.stroke();
+
+  // ticks + hour labels
+  const lbsz = W<200?7:9;
+  for(let i=0;i<TOTAL;i++){
+    const ang=(i/TOTAL)*Math.PI*2-Math.PI/2;
+    const isRaH=(i<=18);
+    const col=isRaH?raFill+'0.72)':setFill+'0.72)';
+    const maj=(i===0||i===19), med=(i%5===0);
+    const tl=maj?(W<200?16:20):med?(W<200?9:12):(W<200?5:7);
+    ctx.beginPath();
+    ctx.moveTo(cx+(OR-tl)*Math.cos(ang), cy+(OR-tl)*Math.sin(ang));
+    ctx.lineTo(cx+OR*Math.cos(ang),      cy+OR*Math.sin(ang));
+    ctx.strokeStyle=col;
+    ctx.lineWidth=maj?2:med?1:0.7;
+    ctx.stroke();
+    if(i%2===0){
+      const lblR=OR+(W<200?11:14);
+      ctx.font=`bold ${maj?lbsz+1:lbsz}px Georgia,serif`;
+      ctx.fillStyle=isRaH?raFill+'0.85)':setFill+'0.85)';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(String(i), cx+lblR*Math.cos(ang), cy+lblR*Math.sin(ang));
+    }
+  }
+
+  // Ra/Set inner labels
+  const raLA=(9.5/38)*Math.PI*2-Math.PI/2;
+  const setLA=(28.5/38)*Math.PI*2-Math.PI/2;
+  const lR=IR-(W<200?9:13);
+  ctx.font=`${W<200?7:9}px Georgia,serif`;
+  ctx.fillStyle=raFill+'0.38)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('Ra', cx+lR*Math.cos(raLA), cy+lR*Math.sin(raLA));
+  ctx.fillStyle=setFill+'0.38)';
+  ctx.fillText('Set', cx+lR*Math.cos(setLA), cy+lR*Math.sin(setLA));
+
+  // Ra/Set divider line
+  const divAng=(19/38)*Math.PI*2-Math.PI/2;
+  ctx.setLineDash([2,3]);
+  ctx.beginPath();
+  ctx.moveTo(cx+(IR+3)*Math.cos(divAng), cy+(IR+3)*Math.sin(divAng));
+  ctx.lineTo(cx+(OR+1)*Math.cos(divAng), cy+(OR+1)*Math.sin(divAng));
+  ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.setLineDash([]);
+
+  // inner ring
+  ctx.beginPath(); ctx.arc(cx,cy,IR,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1; ctx.stroke();
+
+  // hand
+  const subFrac=(t.atnah/19+t.wah/361)/38;
+  const handAng=(t.har/TOTAL+subFrac)*Math.PI*2-Math.PI/2;
+  const handLen=IR-8;
+
+  // shadow
+  ctx.save(); ctx.globalAlpha=0.1; ctx.lineWidth=5;
+  ctx.strokeStyle=accent; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(cx,cy);
+  ctx.lineTo(cx+handLen*Math.cos(handAng), cy+handLen*Math.sin(handAng));
+  ctx.stroke(); ctx.restore();
+
+  // main hand
+  ctx.save(); ctx.lineCap='round'; ctx.lineWidth=2.5; ctx.strokeStyle=accent;
+  ctx.beginPath(); ctx.moveTo(cx,cy);
+  ctx.lineTo(cx+handLen*Math.cos(handAng), cy+handLen*Math.sin(handAng));
+  ctx.stroke();
+  const tx=cx+handLen*Math.cos(handAng), ty=cy+handLen*Math.sin(handAng);
+  ctx.beginPath(); ctx.arc(tx,ty,4,0,Math.PI*2);
+  ctx.fillStyle=accent; ctx.fill();
+  ctx.restore();
+
+  // counterweight
+  ctx.save(); ctx.lineCap='round'; ctx.lineWidth=1.5;
+  ctx.strokeStyle='rgba(255,255,255,0.18)';
+  ctx.beginPath(); ctx.moveTo(cx,cy);
+  ctx.lineTo(cx-15*Math.cos(handAng), cy-15*Math.sin(handAng));
+  ctx.stroke(); ctx.restore();
+
+  // center pin
+  ctx.beginPath(); ctx.arc(cx,cy,W<200?5:7,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,255,255,0.1)'; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx,cy,W<200?2:3,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.fill();
+
+  // watermark (full clock only)
+  if(W>=200){
+    ctx.font='7px Georgia,serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='rgba(255,255,255,0.09)';
+    ctx.fillText('NUWAUBIC TAGWUM', cx, cy+28);
+  }
+}
+
+// ── RENDER YEAR ──
+function renderYear(){
+  const grid=document.getElementById('year-grid');
+  grid.innerHTML='';
+  for(let m=1;m<=19;m++){
+    const isCur=todayN&&todayN.sanu===currentSanu&&todayN.shahur===m;
+    const div=document.createElement('div');
+    div.className='mini-month'+(isCur?' cur-month':'');
+    div.onclick=()=>{currentMonth=m;switchPanel('month')};
+
+    let html=`<div class="mini-hdr">
+      <span>${MONTH_NAMES[m-1]}</span>
+      <span class="mn">Mo. ${m}</span>
+    </div><div class="mini-grid">`;
+
+    WEEKS.forEach((wk,wi)=>{
+      if(wi>0) html+=`<div class="mini-wsep"></div>`;
+      wk.forEach(d=>{
+        const isT=todayN&&todayN.sanu===currentSanu&&todayN.shahur===m&&todayN.yawum===d;
+        html+=`<div class="mini-cell${isT?' today':''}">${d}</div>`;
+      });
+      if(wk.length===4) html+=`<div class="mini-pad"></div>`;
+    });
+    html+=`</div>`;
+    div.innerHTML=html;
+    grid.appendChild(div);
+  }
+}
+
+// ── RENDER MONTH ──
+function renderMonth(){
+  document.getElementById('mv-title').textContent=MONTH_NAMES[currentMonth-1];
+  document.getElementById('mv-sub').textContent=`Month ${currentMonth} · Sanu ${currentSanu}`;
+  const body=document.getElementById('month-body');
+  body.innerHTML='';
+
+  WEEKS.forEach((wk,wi)=>{
+    if(wi>0){
+      const sep=document.createElement('div');
+      sep.className='week-sep'; sep.textContent='◦';
+      body.appendChild(sep);
+    }
+    const block=document.createElement('div');
+    block.className='week-block';
+    const lbl=document.createElement('div');
+    lbl.className='week-lbl';
+    lbl.innerHTML=`${WEEK_NAMES[wi]} &nbsp;<span>Days ${wk[0]}–${wk[wk.length-1]}</span>`;
+    block.appendChild(lbl);
+
+    const grid=document.createElement('div');
+    grid.className='week-days '+(wk.length===5?'w5':'w4');
+    wk.forEach(d=>{
+      const isT=todayN&&todayN.sanu===currentSanu&&todayN.shahur===currentMonth&&todayN.yawum===d;
+      const cell=document.createElement('div');
+      cell.className='day-cell'+(isT?' today':'');
+      cell.innerHTML=`
+        <div class="day-ordinal">${DAY_NAMES[d-1]}</div>
+        <div class="day-num">${d}</div>
+        <div class="day-greg">${nDayGreg(currentSanu,currentMonth,d)}</div>
+        ${isT?'<div class="today-dot"></div>':''}`;
+      grid.appendChild(cell);
+    });
+    block.appendChild(grid);
+    body.appendChild(block);
+  });
+  // closing dot
+  const dot=document.createElement('div');
+  dot.className='week-sep'; dot.textContent='●'; dot.style.color='var(--border2)';
+  body.appendChild(dot);
+}
+
+// ── HIGH-DPI CANVAS SETUP ──
+function setupHighDPICanvas(canvas, w, h){
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width  = w + 'px';
+  canvas.style.height = h + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(dpr, dpr);
+  return ctx;
+}
+
+// ── TICK (runs every frame) ──
+function tick(){
+  const rawDiff = Date.now() - GENESIS_UTC;
+  const offsetMs = getLocalOffsetMs();
+  const diff = rawDiff + offsetMs;
+  const t=msToN(diff);
+  todayN=t;
+  const isRa=t.har<=18;
+
+  // sidebar mini clock always draws
+  const mc=document.getElementById('mini-canvas');
+  if(mc){ const mCtx=setupHighDPICanvas(mc,162,162); drawClock(mCtx,162,162,t,isRa); }
+
+  // sidebar clock shell background
+  document.getElementById('s-clock-shell').style.background=isRa?'#0a0600':'#050418';
+
+  // sidebar time readout
+  document.getElementById('s-time').textContent=`${t.har} · ${t.atnah} · ${t.wah}`;
+  const pill=document.getElementById('s-cycle');
+  pill.className='s-cycle-pill '+(isRa?'pill-ra':'pill-set');
+  pill.textContent=isRa?'RA CYCLE':'SET CYCLE';
+  document.getElementById('s-date-main').textContent=`${getOrd(t.shahur)} Ṡahur · ${getOrd(t.yawum)} Yawum`;
+  document.getElementById('s-date-sub').textContent=`Month ${t.shahur} · Day ${t.yawum}`;
+
+  // topbar
+  document.getElementById('tb-nuwaubic').innerHTML=
+    `<strong>Sanu ${t.sanu}</strong> &nbsp;·&nbsp; ${getOrd(t.shahur)} Ṡahur · ${getOrd(t.yawum)} Yawum`;
+  document.getElementById('tb-greg').textContent=
+    new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  // full clock panel
+  if(currentPanel==='clock'){
+    const fc=document.getElementById('mainclock');
+    if(fc){ const fCtx=setupHighDPICanvas(fc,360,360); drawClock(fCtx,360,360,t,isRa); }
+    document.getElementById('cv-time').textContent=`${t.har} · ${t.atnah} · ${t.wah}`;
+    const cb=document.getElementById('cv-cycle');
+    cb.className='cycle-bar '+(isRa?'c-ra':'c-set');
+    cb.textContent=isRa?'RA CYCLE — DAYTIME · HAR 0–18':'SET CYCLE — NIGHTTIME · HAR 19–37';
+    document.getElementById('cv-cardinal').innerHTML=
+      `${getCard(t.har)} Haraat &nbsp;·&nbsp; ${getCard(t.atnah)} Atnahaat &nbsp;·&nbsp; ${getCard(t.wah)} Wahaat`;
+    document.getElementById('cv-sanu').textContent=`SANU ${t.sanu}`;
+    document.getElementById('cv-date').textContent=`${getOrd(t.shahur)} Ṡahur · ${getOrd(t.yawum)} Yawum`;
+    document.getElementById('cv-dsub').textContent=`Month ${t.shahur} · Day ${t.yawum}`;
+    // live global time — updates in sync with Nuwaubic clock
+    const now=new Date();
+    document.getElementById('cv-localtime').textContent=
+      now.toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',
+        hour:'numeric',minute:'2-digit',second:'2-digit',hour12:true});
+    document.getElementById('cv-utctime').textContent=
+      now.toISOString().replace('T',' ').replace(/\.\d+Z$/,' UTC');
+  }
+
+  requestAnimationFrame(tick);
+}
+
+// ── PANEL SWITCH ──
+function switchPanel(panel){
+  currentPanel=panel;
+  ['year','month','clock','convert','settings'].forEach(p=>{
+    document.getElementById('panel-'+p).classList.toggle('active',p===panel);
+    document.getElementById('nav-'+p).classList.toggle('active',p===panel);
+  });
+  if(panel==='year')  renderYear();
+  if(panel==='month') renderMonth();
+  if(panel==='settings') renderSettingsStatus();
+}
+
+function changeSanu(d){
+  currentSanu=Math.max(1,currentSanu+d);
+  document.getElementById('sanu-display').textContent='Sanu '+currentSanu;
+  if(currentPanel==='year')  renderYear();
+  if(currentPanel==='month') renderMonth();
+}
+
+function changeMonth(d){
+  currentMonth+=d;
+  if(currentMonth<1) {currentMonth=19;currentSanu=Math.max(1,currentSanu-1);}
+  if(currentMonth>19){currentMonth=1; currentSanu++;}
+  document.getElementById('sanu-display').textContent='Sanu '+currentSanu;
+  renderMonth();
+}
+
+function goToday(){
+  if(!todayN)return;
+  currentSanu=todayN.sanu;
+  currentMonth=todayN.shahur;
+  document.getElementById('sanu-display').textContent='Sanu '+currentSanu;
+  if(currentPanel==='year')       renderYear();
+  else if(currentPanel==='month') renderMonth();
+  else switchPanel('year');
+}
+
+// ── CONVERTERS ──
+function convertW2N(){
+  const dateStr = document.getElementById('w2n-date').value;
+  const timeStr = document.getElementById('w2n-time').value;
+  const tz = document.getElementById('w2n-tz').value;
+  if(!dateStr || !timeStr) return;
+  // 1. Parse input directly as local target wall-clock time
+  const localTarget = new Date(`${dateStr}T${timeStr}:00`);
+  // 2. Adjust for target timezone to get absolute UTC time
+  const targetUtcMs = localTarget.getTime();
+  // 3. Apply the active framework offset (Local vs UTC setting adjustment)
+  const activeOffset = getLocalOffsetMs();
+  const diff = (targetUtcMs - GENESIS_UTC) + activeOffset;
+  if(diff < 0){ alert('Date is before the Genesis Anchor (June 26, 1945).'); return; }
+  const t = msToN(diff);
+  const isRa = t.har <= 18;
+  document.getElementById('w2n-rval').textContent =
+    `Sanu ${t.sanu} · ${getOrd(t.shahur)} Ṡahur · ${getOrd(t.yawum)} Yawum`;
+  document.getElementById('w2n-rsub').innerHTML =
+    `Har ${t.har} · Atnah ${t.atnah} · Wah ${t.wah}<br>`+
+    `${getCard(t.har)} Haraat · ${getCard(t.atnah)} Atnahaat · ${getCard(t.wah)} Wahaat<br>`+
+    `${isRa ? 'Ra Cycle (Daytime)' : 'Set Cycle (Nighttime)'}`;
+  document.getElementById('w2n-result').style.display = 'block';
+}
+
+function convertN2W(){
+  const sanu = parseInt(document.getElementById('n2w-sanu').value) || 1;
+  const sh = Math.min(19, Math.max(1, parseInt(document.getElementById('n2w-shahur').value) || 1));
+  const ya = Math.min(19, Math.max(1, parseInt(document.getElementById('n2w-yawum').value) || 1));
+  const ha = Math.min(37, Math.max(0, parseInt(document.getElementById('n2w-har').value) || 0));
+  const at = Math.min(18, Math.max(0, parseInt(document.getElementById('n2w-atnah').value) || 0));
+  const wa = Math.min(18, Math.max(0, parseInt(document.getElementById('n2w-wah').value) || 0));
+  const tz = document.getElementById('n2w-tz').value;
+  // 1. Calculate raw milliseconds from Nuwaubic inputs
+  let targetMs = nToMs(sanu, sh, ya, ha, at, wa);
+  // 2. Reverse active baseline offset to match user view mode
+  targetMs -= getLocalOffsetMs();
+  const d = new Date(targetMs);
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz, weekday: 'long', year: 'numeric', month: 'long',
+    day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true
+  });
+  const fmt2 = new Intl.DateTimeFormat('en-US', {timeZone: tz, timeZoneName: 'long'});
+  const tzName = (fmt2.formatToParts(d).find(p => p.type === 'timeZoneName') || {value: tz}).value;
+  document.getElementById('n2w-rval').textContent = fmt.format(d);
+  document.getElementById('n2w-rsub').textContent = `${tzName} · ${d.toISOString()}`;
+  document.getElementById('n2w-result').style.display = 'block';
+}
+
+// ── TIME BASE SETTINGS ──
+function applyTimeBase(){
+  const sel=document.querySelector('input[name="timebase"]:checked');
+  if(sel) timeBaseMode=sel.value;
+  customOffsetHours=parseFloat(document.getElementById('custom-offset').value)||0;
+
+  // highlight selected option card
+  document.querySelectorAll('.tb-opt').forEach(el=>{
+    el.classList.toggle('selected', el.dataset.val===timeBaseMode);
+  });
+  renderSettingsStatus();
+}
+
+function renderSettingsStatus(){
+  const box=document.getElementById('tb-status');
+  const val=document.getElementById('tb-status-val');
+  const sub=document.getElementById('tb-status-sub');
+
+  // sync radio to current mode
+  const r=document.querySelector(`input[name="timebase"][value="${timeBaseMode}"]`);
+  if(r) r.checked=true;
+  document.querySelectorAll('.tb-opt').forEach(el=>{
+    el.classList.toggle('selected', el.dataset.val===timeBaseMode);
+  });
+
+  let label='', detail='';
+  if(timeBaseMode==='local'){
+    const off=-new Date().getTimezoneOffset();
+    const sign=off>=0?'+':'-';
+    const h=Math.floor(Math.abs(off)/60), m=Math.abs(off)%60;
+    label=`🌅 Local Device Time`;
+    detail=`UTC${sign}${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')} — Har 00 aligns with local midnight`;
+  } else if(timeBaseMode==='utc'){
+    label='🌐 UTC (Original)';
+    detail='Har 00 aligns with UTC midnight (classic behaviour)';
+  } else {
+    const sign=customOffsetHours>=0?'+':'-';
+    label=`✏️ Custom Offset: UTC${sign}${Math.abs(customOffsetHours)}h`;
+    detail=`Har 00 aligns with midnight at UTC${sign}${Math.abs(customOffsetHours)} hours`;
+  }
+  val.textContent=label;
+  sub.textContent=detail;
+  box.style.display='block';
+}
+
+// ── BOOT ──
+initTZ();
+initDate();
+const boot=(Date.now()-GENESIS_UTC)+getLocalOffsetMs();
+if(boot>0){
+  const t=msToN(boot);
+  todayN=t; currentSanu=t.sanu; currentMonth=t.shahur;
+}
+document.getElementById('sanu-display').textContent='Sanu '+currentSanu;
+document.getElementById('n2w-sanu').value=currentSanu;
+applyTimeBase(); // init time base UI to 'local' default
+renderYear();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
