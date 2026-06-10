@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nuwaubic Tagwum — Moor Calendar & Clock</title>
+<title>El Zodok Tagwum — Moor Calendar & Clock</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -317,7 +317,7 @@ canvas#mainclock{display:block;margin:0 auto 20px}
 <!-- ─── SIDEBAR ─── -->
 <aside class="sidebar">
   <div class="s-brand">
-    <h1>Nuwaubic Tagwum</h1>
+    <h1>Zodok Tagwum</h1>
     <p>MOOR CALENDAR &amp; CLOCK</p>
   </div>
 
@@ -428,7 +428,7 @@ canvas#mainclock{display:block;margin:0 auto 20px}
             <div class="fg"><label>TIME</label><input type="time" id="w2n-time" value="12:00"></div>
             <div class="fg" style="min-width:148px"><label>TIMEZONE</label><select id="w2n-tz"></select></div>
           </div>
-          <button class="conv-btn" onclick="convertW2N()">Convert to Nuwaubic</button>
+          <button class="conv-btn" onclick="convertW2N()">Convert to Zodok</button>
           <div class="result-box" id="w2n-result" style="display:none">
             <div class="result-lbl">NUWAUBIC DATE &amp; TIME</div>
             <div class="result-val" id="w2n-rval"></div>
@@ -885,7 +885,7 @@ function tick(){
     document.getElementById('cv-sanu').textContent=`SANU ${t.sanu}`;
     document.getElementById('cv-date').textContent=`${getOrd(t.shahur)} Ṡahur · ${getOrd(t.yawum)} Yawum`;
     document.getElementById('cv-dsub').textContent=`Month ${t.shahur} · Day ${t.yawum}`;
-    // live global time — updates in sync with Nuwaubic clock
+    // live global time — updates in sync with Zodok clock
     const now=new Date();
     document.getElementById('cv-localtime').textContent=
       now.toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',
@@ -967,7 +967,7 @@ function convertN2W(){
   const at = Math.min(18, Math.max(0, parseInt(document.getElementById('n2w-atnah').value) || 0));
   const wa = Math.min(18, Math.max(0, parseInt(document.getElementById('n2w-wah').value) || 0));
   const tz = document.getElementById('n2w-tz').value;
-  // 1. Calculate raw milliseconds from Nuwaubic inputs
+  // 1. Calculate raw milliseconds from Zodok inputs
   let targetMs = nToMs(sanu, sh, ya, ha, at, wa);
   // 2. Reverse active baseline offset to match user view mode
   targetMs -= getLocalOffsetMs();
