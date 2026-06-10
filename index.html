@@ -296,6 +296,104 @@ canvas#mainclock{display:block;margin:0 auto 20px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(200,151,58,.2);border-radius:2px}
 
+/* ─── MOBILE OVERLAY SIDEBAR ─── */
+.sidebar-overlay{
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.55);
+  z-index:99;
+}
+.sidebar-overlay.open{display:block}
+
+/* ─── MOBILE TOP BAR ─── */
+.mobile-topbar{
+  display:none;
+  position:fixed;top:0;left:0;right:0;
+  height:52px;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  align-items:center;
+  padding:0 14px;
+  gap:12px;
+  z-index:90;
+}
+.mob-menu-btn{
+  width:34px;height:34px;border:1px solid var(--border2);border-radius:6px;
+  background:var(--surface);color:var(--gold);cursor:pointer;
+  font-size:17px;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.mob-title{font-size:13px;font-weight:700;color:var(--gold);letter-spacing:.07em;flex:1}
+.mob-time{font-size:13px;color:var(--gold-light);letter-spacing:.04em;font-variant-numeric:tabular-nums;flex-shrink:0}
+
+/* ─── MOBILE BOTTOM NAV ─── */
+.mobile-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;
+  height:58px;
+  background:var(--bg2);
+  border-top:1px solid var(--border);
+  z-index:90;
+  align-items:stretch;
+}
+.mob-nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;cursor:pointer;color:var(--text3);font-size:8px;letter-spacing:.07em;
+  transition:color .14s;border:none;background:transparent;font-family:Georgia,serif;
+  padding:6px 2px;
+}
+.mob-nav-item .mn-icon{font-size:16px;line-height:1}
+.mob-nav-item.active{color:var(--gold-light)}
+.mob-nav-item:hover{color:var(--text2)}
+
+/* ─── MOBILE RESPONSIVE ─── */
+@media(max-width:640px){
+  html,body{overflow:hidden}
+
+  .sidebar{
+    position:fixed;top:0;left:0;bottom:0;
+    z-index:100;
+    transform:translateX(-100%);
+    transition:transform .25s ease;
+    width:min(280px,85vw) !important;
+    min-width:0 !important;
+    border-right:1px solid var(--border2);
+  }
+  .sidebar.mob-open{transform:translateX(0)}
+
+  .mobile-topbar{display:flex}
+  .mobile-nav{display:flex}
+
+  .main{
+    padding-top:52px;
+    padding-bottom:58px;
+  }
+  /* hide desktop topbar on mobile */
+  .topbar{display:none}
+
+  .content{padding:14px 12px}
+
+  /* clock panel – scale down canvas on mobile */
+  canvas#mainclock{
+    width:260px !important;
+    height:260px !important;
+  }
+  .clock-info-card{padding:16px 14px}
+  .clock-bignum{font-size:34px}
+
+  /* year grid – 2 columns on small screens */
+  .year-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+
+  /* month view day cells – smaller */
+  .day-cell{min-height:60px;padding:6px 4px 8px}
+  .day-num{font-size:16px}
+
+  /* converter fields stack nicer */
+  .conv-wrap{max-width:100%}
+  .field-row{gap:7px}
+  .fg{min-width:70px}
+}
+
 /* ─── TIME BASE OPTIONS ─── */
 .tb-opt{
   display:flex;align-items:flex-start;gap:10px;
@@ -314,8 +412,18 @@ canvas#mainclock{display:block;margin:0 auto 20px}
 </head>
 <body>
 
+<!-- ─── MOBILE OVERLAY ─── -->
+<div class="sidebar-overlay" id="mob-overlay" onclick="closeMobSidebar()"></div>
+
+<!-- ─── MOBILE TOP BAR ─── -->
+<div class="mobile-topbar">
+  <button class="mob-menu-btn" onclick="toggleMobSidebar()">☰</button>
+  <div class="mob-title">Zodok Tagwum</div>
+  <div class="mob-time" id="mob-time">0·0·0</div>
+</div>
+
 <!-- ─── SIDEBAR ─── -->
-<aside class="sidebar">
+<aside class="sidebar" id="main-sidebar">
   <div class="s-brand">
     <h1>Zodok Tagwum</h1>
     <p>MOOR CALENDAR &amp; CLOCK</p>
@@ -522,6 +630,25 @@ canvas#mainclock{display:block;margin:0 auto 20px}
 
   </div><!-- .content -->
 </div><!-- .main -->
+
+<!-- ─── MOBILE BOTTOM NAV ─── -->
+<nav class="mobile-nav">
+  <button class="mob-nav-item active" onclick="switchPanel('year');closeMobSidebar()" id="mob-nav-year">
+    <span class="mn-icon">☽</span><span>Year</span>
+  </button>
+  <button class="mob-nav-item" onclick="switchPanel('month');closeMobSidebar()" id="mob-nav-month">
+    <span class="mn-icon">◈</span><span>Month</span>
+  </button>
+  <button class="mob-nav-item" onclick="switchPanel('clock');closeMobSidebar()" id="mob-nav-clock">
+    <span class="mn-icon">◎</span><span>Clock</span>
+  </button>
+  <button class="mob-nav-item" onclick="switchPanel('convert');closeMobSidebar()" id="mob-nav-convert">
+    <span class="mn-icon">⇌</span><span>Convert</span>
+  </button>
+  <button class="mob-nav-item" onclick="switchPanel('settings');closeMobSidebar()" id="mob-nav-settings">
+    <span class="mn-icon">⚙</span><span>Settings</span>
+  </button>
+</nav>
 
 <script>
 // ── CONSTANTS ──
@@ -842,6 +969,16 @@ function setupHighDPICanvas(canvas, w, h){
   return ctx;
 }
 
+// ── MOBILE SIDEBAR ──
+function toggleMobSidebar(){
+  document.getElementById('main-sidebar').classList.toggle('mob-open');
+  document.getElementById('mob-overlay').classList.toggle('open');
+}
+function closeMobSidebar(){
+  document.getElementById('main-sidebar').classList.remove('mob-open');
+  document.getElementById('mob-overlay').classList.remove('open');
+}
+
 // ── TICK (runs every frame) ──
 function tick(){
   const rawDiff = Date.now() - GENESIS_UTC;
@@ -874,8 +1011,10 @@ function tick(){
 
   // full clock panel
   if(currentPanel==='clock'){
+    const isMob = window.innerWidth <= 640;
+    const clockSize = isMob ? 260 : 360;
     const fc=document.getElementById('mainclock');
-    if(fc){ const fCtx=setupHighDPICanvas(fc,360,360); drawClock(fCtx,360,360,t,isRa); }
+    if(fc){ const fCtx=setupHighDPICanvas(fc,clockSize,clockSize); drawClock(fCtx,clockSize,clockSize,t,isRa); }
     document.getElementById('cv-time').textContent=`${t.har} · ${t.atnah} · ${t.wah}`;
     const cb=document.getElementById('cv-cycle');
     cb.className='cycle-bar '+(isRa?'c-ra':'c-set');
@@ -894,6 +1033,10 @@ function tick(){
       now.toISOString().replace('T',' ').replace(/\.\d+Z$/,' UTC');
   }
 
+  // mobile top bar time
+  const mobT = document.getElementById('mob-time');
+  if(mobT) mobT.textContent = `${t.har}·${t.atnah}·${t.wah}`;
+
   requestAnimationFrame(tick);
 }
 
@@ -903,6 +1046,8 @@ function switchPanel(panel){
   ['year','month','clock','convert','settings'].forEach(p=>{
     document.getElementById('panel-'+p).classList.toggle('active',p===panel);
     document.getElementById('nav-'+p).classList.toggle('active',p===panel);
+    const mobBtn=document.getElementById('mob-nav-'+p);
+    if(mobBtn) mobBtn.classList.toggle('active',p===panel);
   });
   if(panel==='year')  renderYear();
   if(panel==='month') renderMonth();
