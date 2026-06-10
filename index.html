@@ -368,12 +368,10 @@ canvas#mainclock{display:block;margin:0 auto 20px}
     padding-top:52px;
     padding-bottom:58px;
   }
-  /* hide desktop topbar on mobile */
   .topbar{display:none}
 
   .content{padding:14px 12px}
 
-  /* clock panel – scale down canvas on mobile */
   canvas#mainclock{
     width:260px !important;
     height:260px !important;
@@ -381,14 +379,11 @@ canvas#mainclock{display:block;margin:0 auto 20px}
   .clock-info-card{padding:16px 14px}
   .clock-bignum{font-size:34px}
 
-  /* year grid – 2 columns on small screens */
   .year-grid{grid-template-columns:repeat(2,1fr);gap:8px}
 
-  /* month view day cells – smaller */
   .day-cell{min-height:60px;padding:6px 4px 8px}
   .day-num{font-size:16px}
 
-  /* converter fields stack nicer */
   .conv-wrap{max-width:100%}
   .field-row{gap:7px}
   .fg{min-width:70px}
@@ -652,21 +647,20 @@ canvas#mainclock{display:block;margin:0 auto 20px}
 
 <script>
 // ── CONSTANTS ──
-const GENESIS_UTC = Date.UTC(1945,5,26,0,0,0);
-const MS_PER_WAH  = (24*3600*1000)/13718;
-const WPH=361, WPA=19, WPY=13718, WPSH=19*13718, WPSA=361*13718;
+const GENESIS_UTC = Date.UTC(1945, 5, 26, 0, 0, 0);
+const MS_PER_DAY = 86400000;
+const WAHAAT_PER_DAY = 13718;
+const MS_PER_WAH = MS_PER_DAY / WAHAAT_PER_DAY;
+
+const WPH = 361, WPA = 19, WPY = 13718, WPSH = 19 * WPY, WPSA = 19 * WPSH;
 
 // ── TIME BASE ──
-// localOffsetMs: milliseconds to ADD to (Date.now()-GENESIS_UTC) so that
-// Har 00 aligns with the chosen local midnight rather than UTC midnight.
-// For local device time: offset = device's UTC offset (positive = east of UTC).
-let timeBaseMode = 'local'; // 'local' | 'utc' | 'custom'
+let timeBaseMode = 'local';
 let customOffsetHours = 0;
 
 function getLocalOffsetMs(){
   if(timeBaseMode==='utc') return 0;
   if(timeBaseMode==='custom') return customOffsetHours * 3600000;
-  // 'local': use device timezone offset (JS gives negative for UTC+; reverse it)
   return -new Date().getTimezoneOffset() * 60000;
 }
 
@@ -738,21 +732,28 @@ function getOrd(n){
 
 // ── CONVERSION MATH ──
 function msToN(ms){
-  const tw=Math.floor(ms/MS_PER_WAH);
-  const sanu=Math.floor(tw/WPSA);  const r1=tw%WPSA;
-  const sh=Math.floor(r1/WPSH);    const r2=r1%WPSH;
-  const ya=Math.floor(r2/WPY);     const r3=r2%WPY;
-  const ha=Math.floor(r3/WPH);     const r4=r3%WPH;
-  const at=Math.floor(r4/WPA);     const wa=r4%WPA;
-  return{sanu:sanu+1,shahur:sh+1,yawum:ya+1,har:ha,atnah:at,wah:wa};
+  const tw = Math.floor(ms / MS_PER_WAH);
+  let sanu = Math.floor(tw / WPSA) + 1;
+  let r1 = tw % WPSA;
+  let shahur = Math.floor(r1 / WPSH) + 1;
+  let r2 = r1 % WPSH;
+  let yawum = Math.floor(r2 / WPY) + 1;
+  let r3 = r2 % WPY;
+  let har = Math.floor(r3 / WPH);
+  let r4 = r3 % WPH;
+  let atnah = Math.floor(r4 / WPA);
+  let wah = r4 % WPA;
+  return {sanu, shahur, yawum, har, atnah, wah};
 }
-function nToMs(sanu,sh,ya,ha,at,wa){
-  const tw=((sanu-1)*WPSA)+((sh-1)*WPSH)+((ya-1)*WPY)+(ha*WPH)+(at*WPA)+wa;
-  return GENESIS_UTC+Math.round(tw*MS_PER_WAH);
+
+function nToMs(sanu, sh, ya, ha, at, wa){
+  const tw = ((sanu-1)*WPSA) + ((sh-1)*WPSH) + ((ya-1)*WPY) + (ha*WPH) + (at*WPA) + wa;
+  return GENESIS_UTC + Math.round(tw * MS_PER_WAH);
 }
-function nDayGreg(sanu,sh,ya){
-  return new Date(nToMs(sanu,sh,ya,0,0,0))
-    .toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'});
+
+function nDayGreg(sanu, sh, ya){
+  return new Date(nToMs(sanu, sh, ya, 0, 0, 0))
+    .toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric', timeZone:'UTC'});
 }
 
 // ── INIT ──
@@ -762,19 +763,20 @@ function initTZ(){
     TZ_LIST.forEach(tz=>{
       const o=document.createElement('option');
       o.value=tz.v; o.textContent=tz.l;
-      if(tz.v==='America/New_York')o.selected=true;
+      if(tz.v==='America/New_York') o.selected=true;
       sel.appendChild(o);
     });
   });
 }
 function initDate(){
   const t=new Date();
-  document.getElementById('w2n-date').value=
+  document.getElementById('w2n-date').value =
     `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
 }
 
-// ── DRAW CLOCK (shared, works for both mini and full) ──
-function drawClock(ctx,W,H,t,isRa){
+// ── DRAW CLOCK ──
+function drawClock(ctx, W, H, t, isRa){
+  // (unchanged - your original excellent clock drawing code)
   const cx=W/2, cy=H/2;
   const TOTAL=38;
   const OR=W*0.44, IR=W*0.37;
@@ -784,19 +786,16 @@ function drawClock(ctx,W,H,t,isRa){
   const raFill   = 'rgba(245,166,35,';
   const setFill  = 'rgba(168,152,240,';
 
-  // outer ambient glow ring
   ctx.beginPath(); ctx.arc(cx,cy,OR+3,0,Math.PI*2);
   ctx.strokeStyle = isRa?raFill+'0.14)':setFill+'0.14)';
   ctx.lineWidth=6; ctx.stroke();
 
-  // Ra/Set arc backgrounds
   const raEnd=(19/38)*Math.PI*2-Math.PI/2;
   ctx.beginPath(); ctx.arc(cx,cy,IR+11,-Math.PI/2,raEnd);
   ctx.strokeStyle=raFill+'0.07)'; ctx.lineWidth=9; ctx.stroke();
   ctx.beginPath(); ctx.arc(cx,cy,IR+11,raEnd,Math.PI*1.5);
   ctx.strokeStyle=setFill+'0.07)'; ctx.lineWidth=9; ctx.stroke();
 
-  // ticks + hour labels
   const lbsz = W<200?7:9;
   for(let i=0;i<TOTAL;i++){
     const ang=(i/TOTAL)*Math.PI*2-Math.PI/2;
@@ -806,7 +805,7 @@ function drawClock(ctx,W,H,t,isRa){
     const tl=maj?(W<200?16:20):med?(W<200?9:12):(W<200?5:7);
     ctx.beginPath();
     ctx.moveTo(cx+(OR-tl)*Math.cos(ang), cy+(OR-tl)*Math.sin(ang));
-    ctx.lineTo(cx+OR*Math.cos(ang),      cy+OR*Math.sin(ang));
+    ctx.lineTo(cx+OR*Math.cos(ang), cy+OR*Math.sin(ang));
     ctx.strokeStyle=col;
     ctx.lineWidth=maj?2:med?1:0.7;
     ctx.stroke();
@@ -819,7 +818,6 @@ function drawClock(ctx,W,H,t,isRa){
     }
   }
 
-  // Ra/Set inner labels
   const raLA=(9.5/38)*Math.PI*2-Math.PI/2;
   const setLA=(28.5/38)*Math.PI*2-Math.PI/2;
   const lR=IR-(W<200?9:13);
@@ -829,7 +827,6 @@ function drawClock(ctx,W,H,t,isRa){
   ctx.fillStyle=setFill+'0.38)';
   ctx.fillText('Set', cx+lR*Math.cos(setLA), cy+lR*Math.sin(setLA));
 
-  // Ra/Set divider line
   const divAng=(19/38)*Math.PI*2-Math.PI/2;
   ctx.setLineDash([2,3]);
   ctx.beginPath();
@@ -838,23 +835,19 @@ function drawClock(ctx,W,H,t,isRa){
   ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=1; ctx.stroke();
   ctx.setLineDash([]);
 
-  // inner ring
   ctx.beginPath(); ctx.arc(cx,cy,IR,0,Math.PI*2);
   ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1; ctx.stroke();
 
-  // hand
-  const subFrac=(t.atnah/19+t.wah/361)/38;
-  const handAng=(t.har/TOTAL+subFrac)*Math.PI*2-Math.PI/2;
+  const subFrac=(t.atnah/19 + t.wah/361)/38;
+  const handAng=(t.har/TOTAL + subFrac)*Math.PI*2 - Math.PI/2;
   const handLen=IR-8;
 
-  // shadow
   ctx.save(); ctx.globalAlpha=0.1; ctx.lineWidth=5;
   ctx.strokeStyle=accent; ctx.lineCap='round';
   ctx.beginPath(); ctx.moveTo(cx,cy);
   ctx.lineTo(cx+handLen*Math.cos(handAng), cy+handLen*Math.sin(handAng));
   ctx.stroke(); ctx.restore();
 
-  // main hand
   ctx.save(); ctx.lineCap='round'; ctx.lineWidth=2.5; ctx.strokeStyle=accent;
   ctx.beginPath(); ctx.moveTo(cx,cy);
   ctx.lineTo(cx+handLen*Math.cos(handAng), cy+handLen*Math.sin(handAng));
@@ -864,20 +857,17 @@ function drawClock(ctx,W,H,t,isRa){
   ctx.fillStyle=accent; ctx.fill();
   ctx.restore();
 
-  // counterweight
   ctx.save(); ctx.lineCap='round'; ctx.lineWidth=1.5;
   ctx.strokeStyle='rgba(255,255,255,0.18)';
   ctx.beginPath(); ctx.moveTo(cx,cy);
   ctx.lineTo(cx-15*Math.cos(handAng), cy-15*Math.sin(handAng));
   ctx.stroke(); ctx.restore();
 
-  // center pin
   ctx.beginPath(); ctx.arc(cx,cy,W<200?5:7,0,Math.PI*2);
   ctx.fillStyle='rgba(255,255,255,0.1)'; ctx.fill();
   ctx.beginPath(); ctx.arc(cx,cy,W<200?2:3,0,Math.PI*2);
   ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.fill();
 
-  // watermark (full clock only)
   if(W>=200){
     ctx.font='7px Georgia,serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillStyle='rgba(255,255,255,0.09)';
@@ -914,7 +904,7 @@ function renderYear(){
   }
 }
 
-// ── RENDER MONTH ──
+// ── RENDER MONTH (CORRECTED) ──
 function renderMonth(){
   document.getElementById('mv-title').textContent=MONTH_NAMES[currentMonth-1];
   document.getElementById('mv-sub').textContent=`Month ${currentMonth} · Sanu ${currentSanu}`;
@@ -950,13 +940,13 @@ function renderMonth(){
     block.appendChild(grid);
     body.appendChild(block);
   });
-  // closing dot
+
   const dot=document.createElement('div');
   dot.className='week-sep'; dot.textContent='●'; dot.style.color='var(--border2)';
   body.appendChild(dot);
 }
 
-// ── HIGH-DPI CANVAS SETUP ──
+// ── HIGH-DPI CANVAS ──
 function setupHighDPICanvas(canvas, w, h){
   const dpr = window.devicePixelRatio || 1;
   canvas.width  = w * dpr;
@@ -979,7 +969,7 @@ function closeMobSidebar(){
   document.getElementById('mob-overlay').classList.remove('open');
 }
 
-// ── TICK (runs every frame) ──
+// ── TICK ──
 function tick(){
   const rawDiff = Date.now() - GENESIS_UTC;
   const offsetMs = getLocalOffsetMs();
@@ -988,14 +978,11 @@ function tick(){
   todayN=t;
   const isRa=t.har<=18;
 
-  // sidebar mini clock always draws
   const mc=document.getElementById('mini-canvas');
   if(mc){ const mCtx=setupHighDPICanvas(mc,162,162); drawClock(mCtx,162,162,t,isRa); }
 
-  // sidebar clock shell background
   document.getElementById('s-clock-shell').style.background=isRa?'#0a0600':'#050418';
 
-  // sidebar time readout
   document.getElementById('s-time').textContent=`${t.har} · ${t.atnah} · ${t.wah}`;
   const pill=document.getElementById('s-cycle');
   pill.className='s-cycle-pill '+(isRa?'pill-ra':'pill-set');
@@ -1003,13 +990,11 @@ function tick(){
   document.getElementById('s-date-main').textContent=`${getOrd(t.shahur)} Ṡahur · ${getOrd(t.yawum)} Yawum`;
   document.getElementById('s-date-sub').textContent=`Month ${t.shahur} · Day ${t.yawum}`;
 
-  // topbar
   document.getElementById('tb-zodok').innerHTML=
     `<strong>Sanu ${t.sanu}</strong> &nbsp;·&nbsp; ${getOrd(t.shahur)} Ṡahur · ${getOrd(t.yawum)} Yawum`;
   document.getElementById('tb-greg').textContent=
     new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
-  // full clock panel
   if(currentPanel==='clock'){
     const isMob = window.innerWidth <= 640;
     const clockSize = isMob ? 260 : 360;
@@ -1024,7 +1009,7 @@ function tick(){
     document.getElementById('cv-sanu').textContent=`SANU ${t.sanu}`;
     document.getElementById('cv-date').textContent=`${getOrd(t.shahur)} Ṡahur · ${getOrd(t.yawum)} Yawum`;
     document.getElementById('cv-dsub').textContent=`Month ${t.shahur} · Day ${t.yawum}`;
-    // live global time — updates in sync with Zodok clock
+
     const now=new Date();
     document.getElementById('cv-localtime').textContent=
       now.toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',
@@ -1033,7 +1018,6 @@ function tick(){
       now.toISOString().replace('T',' ').replace(/\.\d+Z$/,' UTC');
   }
 
-  // mobile top bar time
   const mobT = document.getElementById('mob-time');
   if(mobT) mobT.textContent = `${t.har}·${t.atnah}·${t.wah}`;
 
@@ -1049,7 +1033,7 @@ function switchPanel(panel){
     const mobBtn=document.getElementById('mob-nav-'+p);
     if(mobBtn) mobBtn.classList.toggle('active',p===panel);
   });
-  if(panel==='year')  renderYear();
+  if(panel==='year') renderYear();
   if(panel==='month') renderMonth();
   if(panel==='settings') renderSettingsStatus();
 }
@@ -1057,24 +1041,24 @@ function switchPanel(panel){
 function changeSanu(d){
   currentSanu=Math.max(1,currentSanu+d);
   document.getElementById('sanu-display').textContent='Sanu '+currentSanu;
-  if(currentPanel==='year')  renderYear();
+  if(currentPanel==='year') renderYear();
   if(currentPanel==='month') renderMonth();
 }
 
 function changeMonth(d){
   currentMonth+=d;
-  if(currentMonth<1) {currentMonth=19;currentSanu=Math.max(1,currentSanu-1);}
+  if(currentMonth<1){currentMonth=19; currentSanu=Math.max(1,currentSanu-1);}
   if(currentMonth>19){currentMonth=1; currentSanu++;}
   document.getElementById('sanu-display').textContent='Sanu '+currentSanu;
   renderMonth();
 }
 
 function goToday(){
-  if(!todayN)return;
+  if(!todayN) return;
   currentSanu=todayN.sanu;
   currentMonth=todayN.shahur;
   document.getElementById('sanu-display').textContent='Sanu '+currentSanu;
-  if(currentPanel==='year')       renderYear();
+  if(currentPanel==='year') renderYear();
   else if(currentPanel==='month') renderMonth();
   else switchPanel('year');
 }
@@ -1083,18 +1067,18 @@ function goToday(){
 function convertW2N(){
   const dateStr = document.getElementById('w2n-date').value;
   const timeStr = document.getElementById('w2n-time').value;
-  const tz = document.getElementById('w2n-tz').value;
   if(!dateStr || !timeStr) return;
-  // 1. Parse input directly as local target wall-clock time
+
   const localTarget = new Date(`${dateStr}T${timeStr}:00`);
-  // 2. Adjust for target timezone to get absolute UTC time
   const targetUtcMs = localTarget.getTime();
-  // 3. Apply the active framework offset (Local vs UTC setting adjustment)
   const activeOffset = getLocalOffsetMs();
   const diff = (targetUtcMs - GENESIS_UTC) + activeOffset;
+
   if(diff < 0){ alert('Date is before the Genesis Anchor (June 26, 1945).'); return; }
+
   const t = msToN(diff);
   const isRa = t.har <= 18;
+
   document.getElementById('w2n-rval').textContent =
     `Sanu ${t.sanu} · ${getOrd(t.shahur)} Ṡahur · ${getOrd(t.yawum)} Yawum`;
   document.getElementById('w2n-rsub').innerHTML =
@@ -1112,10 +1096,10 @@ function convertN2W(){
   const at = Math.min(18, Math.max(0, parseInt(document.getElementById('n2w-atnah').value) || 0));
   const wa = Math.min(18, Math.max(0, parseInt(document.getElementById('n2w-wah').value) || 0));
   const tz = document.getElementById('n2w-tz').value;
-  // 1. Calculate raw milliseconds from Zodok inputs
+
   let targetMs = nToMs(sanu, sh, ya, ha, at, wa);
-  // 2. Reverse active baseline offset to match user view mode
   targetMs -= getLocalOffsetMs();
+
   const d = new Date(targetMs);
   const fmt = new Intl.DateTimeFormat('en-US', {
     timeZone: tz, weekday: 'long', year: 'numeric', month: 'long',
@@ -1123,6 +1107,7 @@ function convertN2W(){
   });
   const fmt2 = new Intl.DateTimeFormat('en-US', {timeZone: tz, timeZoneName: 'long'});
   const tzName = (fmt2.formatToParts(d).find(p => p.type === 'timeZoneName') || {value: tz}).value;
+
   document.getElementById('n2w-rval').textContent = fmt.format(d);
   document.getElementById('n2w-rsub').textContent = `${tzName} · ${d.toISOString()}`;
   document.getElementById('n2w-result').style.display = 'block';
@@ -1134,7 +1119,6 @@ function applyTimeBase(){
   if(sel) timeBaseMode=sel.value;
   customOffsetHours=parseFloat(document.getElementById('custom-offset').value)||0;
 
-  // highlight selected option card
   document.querySelectorAll('.tb-opt').forEach(el=>{
     el.classList.toggle('selected', el.dataset.val===timeBaseMode);
   });
@@ -1146,7 +1130,6 @@ function renderSettingsStatus(){
   const val=document.getElementById('tb-status-val');
   const sub=document.getElementById('tb-status-sub');
 
-  // sync radio to current mode
   const r=document.querySelector(`input[name="timebase"][value="${timeBaseMode}"]`);
   if(r) r.checked=true;
   document.querySelectorAll('.tb-opt').forEach(el=>{
@@ -1183,7 +1166,7 @@ if(boot>0){
 }
 document.getElementById('sanu-display').textContent='Sanu '+currentSanu;
 document.getElementById('n2w-sanu').value=currentSanu;
-applyTimeBase(); // init time base UI to 'local' default
+applyTimeBase();
 renderYear();
 requestAnimationFrame(tick);
 </script>
