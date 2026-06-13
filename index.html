@@ -9,8 +9,8 @@
    DESIGN TOKENS
    Palette: deep lapis void + ochre gold + temple amber + spirit violet
    Type: Georgia (system serif, ancient-instrument feel) + monospace for numbers
-   Signature element: glowing dual-arc Base-19 clock face where Arabic glyphs
-   orbit the inner ring like celestial markers
+   Signature element: glowing dual-arc Base-19 clock face where bracketed
+   single-digit [10]–[18] values orbit the inner ring like celestial markers
 ══════════════════════════════════════════════ */
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -337,7 +337,7 @@ canvas#mainclock{display:block;margin:0 auto 18px}
   font-size:13px;font-weight:700;border-radius:4px;
   background:var(--void3);border:1px solid var(--br);color:var(--gold);
 }
-.b19-sym-cell.ext{color:var(--ra);font-size:15px}
+.b19-sym-cell.ext{color:var(--ra);font-size:9.5px;letter-spacing:0}
 .b19-dec-lbl{font-size:7px;color:var(--tx3);letter-spacing:.04em}
 .b19-note{
   font-size:8px;color:var(--tx3);letter-spacing:.05em;
@@ -571,7 +571,7 @@ canvas#face-diagram{display:block;margin:0 auto}
           <div class="os-phase" id="os-phase">—</div>
           <div class="os-sub">
             Full cycle: <strong style="color:var(--gold2)">100</strong> days (B19) = <strong style="color:var(--gold2)">361</strong> absolute days<br>
-            Phase I: <strong style="color:var(--ra)">3د</strong> = 70 abs · Phase II: <strong style="color:var(--set)">و6</strong> = 291 abs
+            Phase I: <strong style="color:var(--ra)">3[13]</strong> = 70 abs · Phase II: <strong style="color:var(--set)">15[6]</strong> = 291 abs
           </div>
         </div>
         <div class="os-bar">
@@ -610,7 +610,7 @@ canvas#face-diagram{display:block;margin:0 auto}
     <div id="panel-clock" class="panel">
       <div class="clock-wrap">
 
-        <div class="cycle-bar c-ra" id="cv-cycle">RA CYCLE — DAYTIME · HAR 0–ط</div>
+        <div class="cycle-bar c-ra" id="cv-cycle">RA CYCLE — DAYTIME · HAR 0–[18]</div>
         <canvas id="mainclock"></canvas>
 
         <div class="clock-info">
@@ -645,7 +645,7 @@ canvas#face-diagram{display:block;margin:0 auto}
           <div style="font-size:8.5px;color:var(--tx3);letter-spacing:.05em;margin-bottom:11px;line-height:1.75">
             Full day-night cycle = <strong style="color:var(--gold2)">20 Har</strong> (notation) = <strong style="color:var(--gold2)">38</strong> absolute Har.
             The face splits at <strong style="color:var(--ra)">Har 0/20</strong> (Ra shift start, top) and <strong style="color:var(--set)">Har 10</strong> (Set shift start, right).
-            Each half = <strong style="color:var(--tx)">ط Har</strong> = 19 absolute Har.
+            Each half = <strong style="color:var(--tx)">[18] Har</strong> = 19 absolute Har.
           </div>
           <canvas id="face-diagram"></canvas>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
@@ -664,17 +664,17 @@ canvas#face-diagram{display:block;margin:0 auto}
 
         <!-- Base-19 symbol reference -->
         <div class="cd-section">
-          <div class="cd-title">⊕ BASE-19 SYMBOL DICTIONARY — ARABIC LETTER EXTENSION</div>
+          <div class="cd-title">⊕ BASE-19 SYMBOL DICTIONARY — BRACKETED SINGLE-DIGIT EXTENSION</div>
           <div style="font-size:8.5px;color:var(--tx3);letter-spacing:.05em;margin-bottom:10px;line-height:1.75">
-            Values 0–9 use standard digits. Values 10–18 (Arabic letters) are single characters for column-aligned display.
+            Values 0–9 use standard digits. Values 10–18 are written as bracketed single digits — <strong style="color:var(--tx2)">[10]</strong> through <strong style="color:var(--tx2)">[18]</strong> — each one a single B19 place-value, never split into separate decimal digits.
           </div>
           <div class="b19-ref-grid" id="b19-grid"></div>
           <div class="b19-note">
             <strong style="color:var(--tx2)">Critical rollovers:</strong> &nbsp;
             19<sub>dec</sub>=<span style="color:var(--gold)">10</span> &nbsp;·&nbsp;
             38<sub>dec</sub>=<span style="color:var(--gold)">20</span> &nbsp;·&nbsp;
-            70<sub>dec</sub>=<span style="color:var(--gold)">3د</span> &nbsp;·&nbsp;
-            291<sub>dec</sub>=<span style="color:var(--gold)">و6</span> &nbsp;·&nbsp;
+            70<sub>dec</sub>=<span style="color:var(--gold)">3[13]</span> &nbsp;·&nbsp;
+            291<sub>dec</sub>=<span style="color:var(--gold)">15[6]</span> &nbsp;·&nbsp;
             361<sub>dec</sub>=<span style="color:var(--gold)">100</span>
           </div>
         </div>
@@ -779,7 +779,7 @@ canvas#face-diagram{display:block;margin:0 auto}
               <input type="radio" name="tb" value="local" checked>
               <div class="tb-opt-body">
                 <div class="tb-opt-title">🌅 Local Device Time <span class="tb-badge">RECOMMENDED</span></div>
-                <div class="tb-opt-desc">Har 0 = your device's local midnight. Ra (Har 0–ط) matches daytime; Set (Har 10–1ط) matches nighttime.</div>
+                <div class="tb-opt-desc">Har 0 = your device's local midnight. Ra (Har 0–[18]) matches daytime; Set (Har 10–1[18]) matches nighttime.</div>
               </div>
             </label>
             <label class="tb-opt" data-val="utc">
@@ -842,23 +842,73 @@ canvas#face-diagram{display:block;margin:0 auto}
 <script>
 'use strict';
 
-// ── BASE-19 ──────────────────────────────────────
+// ── BASE-19 LTR CONVERSION ENGINE ────────────────
+// Strict Left-to-Right bracketed array sub-grid notation.
+// Values 0–9 are standard digits.
+// Values 10–18 are atomic bracketed single-digits: [10] … [18].
+// These brackets mark a UNITS slot — they are never applied to the
+// Nineteens or Squares column, which always render as plain integers.
+//
+// Tier 1  (0–18):   standalone → "0"…"9" or "[10]"…"[18]"
+// Tier 2  (19–360): Nineteens[Units]           e.g. 1[0], 3[13], 15[6]
+// Tier 3  (361+):   Squares[Nineteens|Units]   e.g. 1[0|0], 1[3|13]
+
+// Atomic symbol table — indices 0-18
 const B19 = ['0','1','2','3','4','5','6','7','8','9',
-             'ا','ب','ج','د','ه','و','ز','ح','ط'];
-// names for reference
+             '[10]','[11]','[12]','[13]','[14]','[15]','[16]','[17]','[18]'];
+
+// Display names for the reference grid
 const B19_NAMES = [
   'Zero','One','Two','Three','Four','Five','Six','Seven','Eight','Nine',
-  'Alif (ا)','Ba (ب)','Jeem (ج)','Dal (د)','Ha (ه)',
-  'Waw (و)','Zain (ز)','Ḥā (ح)','Ṭā (ط)'
+  'Ten [10]','Eleven [11]','Twelve [12]','Thirteen [13]','Fourteen [14]',
+  'Fifteen [15]','Sixteen [16]','Seventeen [17]','Eighteen [18]'
 ];
 
-function b19(n){
-  if(n < 0) return '-' + b19(-n);
-  if(n === 0) return '0';
-  let s = '', x = n;
-  while(x > 0){ s = B19[x % 19] + s; x = Math.floor(x / 19); }
-  return s;
+/**
+ * Convert a non-negative decimal integer to its Base-19 LTR string.
+ *
+ * Tier 1 — Standalone single digit (0–18):
+ *   0–9  → plain digit string
+ *   10–18 → bracketed atom "[10]"…"[18]"
+ *
+ * Tier 2 — Double-digit compound (19–360):
+ *   Format: <nineteens>[<units>]
+ *   The nineteens column is always a plain integer (never bracketed).
+ *   The units slot uses B19[] so values 10–18 appear as e.g. [13].
+ *   Examples: 19→1[0]  32→1[13]  70→3[13]  189→9[18]  291→15[6]
+ *
+ * Tier 3 — Triple-digit matrix rollover (361+):
+ *   Format: <squares>[<nineteens>|<units>]
+ *   Pipe delimiter groups the two lower tiers inside one bracket pair.
+ *   Examples: 361→1[0|0]  431→1[3|13]  722→2[0|0]
+ */
+function toBase19String(n) {
+  if (n < 0)  return '0';           // guard: negative not used in Zodok
+
+  // ── Tier 1: single B19 digit ─────────────────────
+  if (n < 19) return B19[n];        // "0"…"9" or "[10]"…"[18]"
+
+  // ── Tier 2: Nineteens[Units] ─────────────────────
+  if (n < 361) {
+    const nineteens = Math.floor(n / 19);   // plain integer (1–18)
+    const units     = n % 19;               // 0–18 → B19[]
+    return `${nineteens}[${units}]`;
+    // Note: nineteens column is never bracketed. B19[] is already applied
+    // to the units slot implicitly because the bracket IS the slot wrapper.
+    // Values inside must be the raw decimal digit(s) of the unit quantity,
+    // which for 10–18 are displayed as their decimal form (not re-encoded).
+  }
+
+  // ── Tier 3: Squares[Nineteens|Units] ─────────────
+  const squares   = Math.floor(n / 361);
+  const rem       = n % 361;
+  const nineteens = Math.floor(rem / 19);   // 0–18 (plain)
+  const units     = rem % 19;               // 0–18 (plain)
+  return `${squares}[${nineteens}|${units}]`;
 }
+
+// Canonical alias used throughout the application
+const b19 = toBase19String;
 
 // ── SYSTEM CONSTANTS ─────────────────────────────
 const GENESIS_UTC  = Date.UTC(1945, 5, 26, 0, 0, 0);  // Jun 26 1945
@@ -873,8 +923,8 @@ const WPSH = 19 * WPY;            // wah per shahur
 const WPSA = 19 * WPSH;           // wah per sanu
 
 const TOTAL_HAR    = 38;
-const OSIRIS_P1    = 70;           // absolute days, phase 1 (3د)
-const OSIRIS_P2    = 291;          // absolute days, phase 2 (و6)
+const OSIRIS_P1    = 70;           // absolute days, phase 1 (3[13])
+const OSIRIS_P2    = 291;          // absolute days, phase 2 (15[6])
 const YEAR_DAYS    = 361;          // absolute days / year (100 B19)
 
 // ── TIME BASE ────────────────────────────────────
@@ -1165,7 +1215,7 @@ function buildHarTable(){
   const mpw    = mpa / 19;                    // minutes per wah
   const rows   = [
     {b19:'1 Har',            abs:'1 Har (dec)',      min:mph,     note:'Primary hour unit'},
-    {b19:'ط Har (Ra shift)',  abs:'19 Har (dec)',    min:mph*19,  note:'One daylight shift'},
+    {b19:'[18] Har (Ra shift)', abs:'19 Har (dec)',    min:mph*19,  note:'One daylight shift'},
     {b19:'20 Har (full day)', abs:'38 Har (dec)',    min:mph*38,  note:'Full 1440-min cycle'},
     {b19:'1 Atnah',           abs:'1/19 Har',        min:mpa,     note:'Sub-hour unit (Har ÷ 19)'},
     {b19:'1 Wah',             abs:'1/361 Har',       min:mpw,     note:'Micro-unit (Atnah ÷ 19)'},
@@ -1227,7 +1277,7 @@ function renderYear(){
   updateOsiris();
   const lbl = document.getElementById('year-section-lbl');
   if(lbl && todayT)
-    lbl.textContent = `SANU ${currentSanu} · 19 ṠAHUR (B19: 10) · 19 YAWUM PER ṠAHUR (B19: 10) · TOTAL 361 DAYS (B19: 100)`;
+    lbl.textContent = `SANU ${b19(currentSanu)} · 19 ṠAHUR (B19: 10) · 19 YAWUM PER ṠAHUR (B19: 10) · TOTAL 361 DAYS (B19: 100)`;
 
   const grid = document.getElementById('year-grid');
   if(!grid) return;
@@ -1268,7 +1318,7 @@ function renderYear(){
 // ── RENDER MONTH VIEW ─────────────────────────────
 function renderMonth(){
   document.getElementById('mv-title').textContent = MONTH_NAMES[currentMonth-1];
-  document.getElementById('mv-sub').textContent   = `Ṡahur ${b19(currentMonth)} · Sanu ${currentSanu}`;
+  document.getElementById('mv-sub').textContent   = `Ṡahur ${b19(currentMonth)} · Sanu ${b19(currentSanu)}`;
   const body = document.getElementById('month-body');
   body.innerHTML = '';
 
@@ -1343,7 +1393,7 @@ function tick(){
 
   // topbar
   const tbz = document.getElementById('tb-zodok');
-  if(tbz) tbz.innerHTML = `<strong>Sanu ${t.sanu}</strong> &nbsp;·&nbsp; ${getOrd(t.shahur)} Ṡahur · ${getOrd(t.yawum)} Yawum`;
+  if(tbz) tbz.innerHTML = `<strong>Sanu ${b19(t.sanu)}</strong> &nbsp;·&nbsp; ${getOrd(t.shahur)} Ṡahur · ${getOrd(t.yawum)} Yawum`;
   const tbg = document.getElementById('tb-greg');
   if(tbg) tbg.textContent = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
@@ -1363,14 +1413,14 @@ function tick(){
 
     const cvcy = document.getElementById('cv-cycle');
     if(cvcy){ cvcy.className='cycle-bar '+(isRa?'c-ra':'c-set');
-      cvcy.textContent=isRa?'RA CYCLE — DAYTIME · HAR 0–ط':'SET CYCLE — NIGHTTIME · HAR 10–1ط'; }
+      cvcy.textContent=isRa?'RA CYCLE — DAYTIME · HAR 0–[18]':'SET CYCLE — NIGHTTIME · HAR 10–1[18]'; }
 
     const cvc = document.getElementById('cv-card');
     if(cvc) cvc.innerHTML =
       `${getCard(t.har)} Haraat &nbsp;·&nbsp; ${getCard(t.atnah)} Atnahaat &nbsp;·&nbsp; ${getCard(t.wah)} Wahaat`;
 
     const cvsl = document.getElementById('cv-sanu-lbl');
-    if(cvsl) cvsl.textContent = `SANU ${t.sanu}`;
+    if(cvsl) cvsl.textContent = `SANU ${b19(t.sanu)}`;
     const cvd = document.getElementById('cv-date');
     if(cvd) cvd.textContent = `${getOrd(t.shahur)} Ṡahur · ${getOrd(t.yawum)} Yawum`;
     const cvds = document.getElementById('cv-dsub');
@@ -1408,7 +1458,7 @@ function switchPanel(panel){
 
 function changeSanu(d){
   currentSanu = Math.max(1, currentSanu+d);
-  document.getElementById('sanu-disp').textContent = 'Sanu '+currentSanu;
+  document.getElementById('sanu-disp').textContent = 'Sanu '+b19(currentSanu);
   if(currentPanel==='year')  renderYear();
   if(currentPanel==='month') renderMonth();
 }
@@ -1416,14 +1466,14 @@ function changeMonth(d){
   currentMonth += d;
   if(currentMonth < 1)  { currentMonth=19; currentSanu=Math.max(1,currentSanu-1); }
   if(currentMonth > 19) { currentMonth=1;  currentSanu++; }
-  document.getElementById('sanu-disp').textContent='Sanu '+currentSanu;
+  document.getElementById('sanu-disp').textContent='Sanu '+b19(currentSanu);
   renderMonth();
 }
 function goToday(){
   if(!todayT) return;
   currentSanu   = todayT.sanu;
   currentMonth  = todayT.shahur;
-  document.getElementById('sanu-disp').textContent='Sanu '+currentSanu;
+  document.getElementById('sanu-disp').textContent='Sanu '+b19(currentSanu);
   if(currentPanel==='year')       renderYear();
   else if(currentPanel==='month') renderMonth();
   else switchPanel('year');
@@ -1439,7 +1489,7 @@ function convertW2N(){
   if(diff<0){ alert('Date is before the Genesis Anchor (June 26, 1945).'); return; }
   const t=msToT(diff), isRa=t.har<19;
   document.getElementById('w2n-rval').textContent =
-    `Sanu ${t.sanu} · ${getOrd(t.shahur)} Ṡahur · ${getOrd(t.yawum)} Yawum`;
+    `Sanu ${b19(t.sanu)} · ${getOrd(t.shahur)} Ṡahur · ${getOrd(t.yawum)} Yawum`;
   document.getElementById('w2n-rsub').innerHTML =
     `Har ${b19(t.har)} · Atnah ${b19(t.atnah)} · Wah ${b19(t.wah)}<br>`+
     `${getCard(t.har)} Haraat · ${getCard(t.atnah)} Atnahaat · ${getCard(t.wah)} Wahaat<br>`+
@@ -1525,7 +1575,7 @@ if(bootDiff > 0){
   currentSanu  = todayT.sanu;
   currentMonth = todayT.shahur;
 }
-document.getElementById('sanu-disp').textContent = 'Sanu '+currentSanu;
+document.getElementById('sanu-disp').textContent = 'Sanu '+b19(currentSanu);
 document.getElementById('n2w-sanu').value = currentSanu;
 
 applyTB();
